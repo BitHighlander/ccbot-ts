@@ -643,14 +643,7 @@ let do_work = async function(){
             let timeRelease = new Date().getTime()
             let duration = timeRelease - timeReceive
 
-            let output = {
-                views:[],
-                text:[
-                    'beeboop'
-                ]
-            }
-
-            redis.lpush(work.queueId,JSON.stringify(output))
+            redis.lpush(work.queueId,JSON.stringify(response))
         } else {
             log.info(tag,"queue empty!")
         }

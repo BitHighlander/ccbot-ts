@@ -16,6 +16,7 @@
     "docker:push:all": "npm run docker:build && npm run docker:tag && npm run docker:push"
   },
   "dependencies": {
+    "@pioneer-platform/accounting": "^6.2.2",
     "@pioneer-platform/coincap": "^8.1.5",
     "@pioneer-platform/default-mongo": "latest",
     "@pioneer-platform/default-redis": "latest",
@@ -26,6 +27,7 @@
     "discord.js": "^13.1.0",
     "dotenv": "^8.1.0",
     "node-cron": "^3.0.0",
+    "sentence-tokenizer": "^1.0.1",
     "uuid": "^8.3.2",
     "wait-promise": "^0.4.1"
   },
