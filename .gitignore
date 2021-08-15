@@ -1,0 +1,23 @@
+# Project exclude paths
+/deploy/node_modules/
+/modules/support/loggerdog/node_modules/
+lib/**
+*/lib/*
+**/lib/**
+*/.idea
+*/*/.idea
+.yarnrc
+node_modules
+.env*
+.idea
+env_*
+lib/*
+secrets/*
+*wallet*
+wallet*
+Wallet*
+monerowallet
+monerowallet.keys
+.deploy-env
+.DS_Store
+coverage

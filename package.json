@@ -1,0 +1,15 @@
+{
+  "name": "ccbot-v2",
+  "version": "1.0.0",
+  "scripts": {
+    "start-dev": "make && make dev",
+    "build": "make && make push",
+    "update": "make up"
+  },
+  "dependencies": {
+  },
+  "engines": {
+    "node": ">=16.6.0",
+    "npm": ">=6.0.0"
+  }
+}
