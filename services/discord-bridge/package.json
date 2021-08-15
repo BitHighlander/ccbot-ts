@@ -21,10 +21,12 @@
     "@pioneer-platform/default-redis": "latest",
     "@pioneer-platform/loggerdog": "latest",
     "@pioneer-platform/redis-queue": "latest",
+    "@types/uuid": "^8.3.1",
     "chai": "^4.3.4",
     "discord.js": "^13.1.0",
     "dotenv": "^8.1.0",
     "node-cron": "^3.0.0",
+    "uuid": "^8.3.2",
     "wait-promise": "^0.4.1"
   },
   "devDependencies": {

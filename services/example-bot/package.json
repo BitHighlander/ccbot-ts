@@ -1,5 +1,5 @@
 {
-  "name": "ccbot",
+  "name": "example-bot",
   "version": "1.0.1",
   "private": true,
   "scripts": {
@@ -15,21 +15,14 @@
     "docker:push:all": "npm run docker:build && npm run docker:tag && npm run docker:push"
   },
   "dependencies": {
-    "@pioneer-platform/accounting": "^6.2.2",
-    "@pioneer-platform/ccbot-coincap": "^8.1.16",
-    "@pioneer-platform/ccbot-easter-eggs": "^8.1.10",
-    "@pioneer-platform/ccbot-rivescript-brain": "^8.1.10",
     "@pioneer-platform/coincap": "^8.1.5",
     "@pioneer-platform/default-mongo": "latest",
     "@pioneer-platform/default-redis": "latest",
     "@pioneer-platform/loggerdog": "latest",
-    "@pioneer-platform/pioneer-rebalance": "^6.2.9",
     "@pioneer-platform/redis-queue": "^8.1.6",
-    "asciichart": "^1.5.25",
     "chai": "^4.3.4",
     "dotenv": "^8.1.0",
     "node-cron": "^3.0.0",
-    "sentence-tokenizer": "^1.0.1",
     "wait-promise": "^0.4.1"
   },
   "devDependencies": {
