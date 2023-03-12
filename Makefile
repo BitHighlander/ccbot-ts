@@ -7,7 +7,8 @@ clean::
 	find . -name "node_modules" -type d -prune -print | xargs du -chs && find . -name 'node_modules' -type d -prune -print -exec rm -rf '{}' \; &&\
 
 build::
-	sh scripts/build.sh
+    echo lol
+# 	cd services/ccbot && npm i && npm run build:all && cd ../..
 
 dev::
 	pm2 start process.json --watch && pm2 logs
@@ -16,7 +17,8 @@ test::
 	echo $(env)
 
 push::
-	sh scripts/push-images-$(env).sh
+	cd services/ccbot && npm i && npm run docker:push:all && cd ../..
+	cd services/discord-bridge && npm i && npm run docker:push:all && cd ../..
 
 up::
 	cd deploy && npm i && node lib/index
