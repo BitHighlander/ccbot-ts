@@ -1,13 +1,20 @@
 /*
-      update tx's by address worker
+    Discord bridge
 
-      Start
+    This bridge contains all the discord logic
+
+    No bot logic
+
+    Multi-plex for multiple bots and channels
 
  */
 let TAG = ' | discord-bridge | '
 require('dotenv').config()
-require('dotenv').config({path:"../../../.env"})
+require('dotenv').config({path:"./.env"})
+require('dotenv').config({path:"./../.env"})
 require('dotenv').config({path:"./../../.env"})
+require('dotenv').config({path:"./../../.env"})
+require('dotenv').config({path:"../../../.env"})
 require('dotenv').config({path:"../../../../.env"})
 
 let log = require("@pioneer-platform/loggerdog")()
@@ -25,7 +32,9 @@ let discordIn = connection.get("discordIn");
 const Tokenizer = require('sentence-tokenizer');
 const tokenizer = new Tokenizer('reddit');
 
-const { Client, Intents, MessageEmbed, BaseGuildEmojiManager } = require('discord.js');
+const { Client, Intents, EmbedBuilder, GatewayIntentBits } = require('discord.js');
+if(!EmbedBuilder) throw Error("Discord.js API changed!")
+if(!Client) throw Error("Discord.js API changed!")
 
 interface Data {
     queueId:string
@@ -57,13 +66,14 @@ interface Data {
 
 const bot = new Client({
     intents: [
-        Intents.FLAGS.GUILDS,
-        Intents.FLAGS.DIRECT_MESSAGES,
-        Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-        Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
-        Intents.FLAGS.GUILD_INTEGRATIONS,
-        Intents.FLAGS.GUILD_MESSAGES,
-        Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessageReactions,
+        GatewayIntentBits.GuildEmojisAndStickers,
+        GatewayIntentBits.GuildIntegrations,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions
     ] ,
     partials:[
         'CHANNEL'
@@ -112,17 +122,17 @@ const create_view = async function(view:any,message:any,data:any){
                 }
 
                 //view to discord
-                const exampleEmbedPercent = new MessageEmbed()
+                const exampleEmbedPercent = new EmbedBuilder()
                     .setColor("#0099ff")
-                    .setAuthor(
-                        'Your Target portfolio percentages'
-                    )
+                    // .setAuthor(
+                    //     'Your Target portfolio percentages'
+                    // )
+                    .setAuthor({ name: 'Your Target portfolio percentages', iconURL: "", url: "" })
                     .addFields(
                         allFieldsPercentages
                     )
                     .setTimestamp()
-                    .setFooter("CoinCap", "https://iconape.com/wp-content/png_logo_vector/coincap.png");
-
+                    .setFooter({ text: "CoinCap", iconURL: "https://iconape.com/wp-content/png_logo_vector/coincap.png" });
 
                 output.embeds.push(exampleEmbedPercent)
                 break;
@@ -143,17 +153,17 @@ const create_view = async function(view:any,message:any,data:any){
                 }
 
                 //view to discord
-                const exampleEmbed = new MessageEmbed()
+                const exampleEmbed = new EmbedBuilder()
                     .setColor("#0099ff")
-                    .setAuthor(
-                        'Your Account Balances'
-                    )
+                    // .setAuthor(
+                    //     'Your Account Balances'
+                    // )
+                    .setAuthor({ name: 'Your Account Balances', iconURL: "", url: "" })
                     .addFields(
                         allFields
                     )
                     .setTimestamp()
-                    .setFooter("CoinCap", "https://iconape.com/wp-content/png_logo_vector/coincap.png");
-
+                    .setFooter({ text: "CoinCap", iconURL: "https://iconape.com/wp-content/png_logo_vector/coincap.png" })
 
                 output.embeds.push(exampleEmbed)
                 break;
@@ -164,13 +174,15 @@ const create_view = async function(view:any,message:any,data:any){
                 let split = view.data.split('\n')
                 log.info(tag,"split: ",split)
 
-                const exampleEmbedHeader = new MessageEmbed()
+                const exampleEmbedHeader = new EmbedBuilder()
                     .setColor("#0099ff")
-                    .setAuthor(
-                        data.username+" Altfolio"
-                    )
+                    .setAuthor({ name: data.username+" Altfolio", iconURL: 'https://www.iconpacks.net/icons/1/free-pie-chart-icon-683-thumb.png', url: 'https://coincap.io' })
+                    // .setAuthor(
+                    //     data.username+" Altfolio"
+                    // )
                     .setTimestamp()
-                    .setFooter("CoinCap", "https://iconape.com/wp-content/png_logo_vector/coincap.png");
+                    // .setFooter("CoinCap", "https://iconape.com/wp-content/png_logo_vector/coincap.png");
+                    .setFooter({ text: "CoinCap", iconURL: "https://iconape.com/wp-content/png_logo_vector/coincap.png" });
                 output.embeds.push(exampleEmbedHeader)
 
                 let addData = []
@@ -202,13 +214,9 @@ const create_view = async function(view:any,message:any,data:any){
                     }
                     addData.push(entry)
 
-                    const exampleEmbed = new MessageEmbed()
+                    const exampleEmbed = new EmbedBuilder()
                         .setColor("#0099ff")
-                        .setAuthor(
-                            ""+coin.toUpperCase()+"",
-                            "https://assets.coincap.io/assets/icons/"+coin+"@2x.png",
-                            "https://coincap.io/assets/"+coin+""
-                        )
+                        .setAuthor({ name: ""+coin.toUpperCase()+"", iconURL: "https://assets.coincap.io/assets/icons/"+coin+"@2x.png", url: "https://coincap.io/assets/"+coin+"" })
                         .addFields(
                             { name: "Price", value: tokens[2], inline: true },
                             { name: "Change", value: tokens[3]+" "+tokens[4], inline: true, setColor: '#0099ff' },
@@ -226,13 +234,35 @@ const create_view = async function(view:any,message:any,data:any){
     }
 }
 
+
+// bot.on('messageCreate', async function (message:any) {
+//     let tag = " | discord message | "
+//     try {
+//         log.info(tag,"message: ",JSON.stringify(message))
+//         log.info(tag,"message: ",message.toString())
+//         log.info(tag,"message: ",message)
+//         log.info(tag,"message: ",Object.keys(message))
+//         log.info(tag,"user: ",message.author.id)
+//         log.info(tag,"channel: ",message.channel.name)
+//         log.info(tag,"content: ",message.content)
+//         log.info(tag,"attachments: ",message.attachments)
+//         log.info(tag,"reactions: ",message.reactions)
+//
+//         return
+//     } catch (e) {
+//         console.error('e', e)
+//         throw e
+//     }
+// })
+
 bot.on('messageCreate', async function (message:any) {
     let tag = " | discord message | "
     try {
-        // log.info("message: ",JSON.stringify(message))
-        // log.info("user: ",message.author.id)
-        // log.info("channel: ",message.channel.name)
-        // log.info("content: ",message.content)
+        log.info(tag,"message: ",JSON.stringify(message))
+        log.info(tag,"message: ",message.toString())
+        log.info(tag,"user: ",message.author.id)
+        log.info(tag,"channel: ",message.channel.name)
+        log.info(tag,"content: ",message.content)
 
         let admin = false
         let dm = false
@@ -247,10 +277,10 @@ bot.on('messageCreate', async function (message:any) {
             queueId:uuidv4(),
             admin,
             dm,
-            channel:message.channel.name,
+            channel:message.channelId,
             user:message.author.id,
             username:message.author.username,
-            text:message.content
+            text:message.cleanContent
         }
 
         if(!message.channel.name && message.channel.type === 'DM'){
@@ -270,7 +300,7 @@ bot.on('messageCreate', async function (message:any) {
 
                 //get response from ccBot
                 let response = await redisQueue.blpop(data.queueId, TIMEOUT_BOT_RESPONSE)
-                if(!response[1]) throw Error('invalid response from ccbot!')
+                if(response && response[0] && !response[1]) throw Error('invalid response from ccbot!')
                 let responses = JSON.parse(response[1])
                 log.info(tag," responses: ",responses)
                 log.info(tag," responses: ",typeof(responses))
@@ -287,22 +317,23 @@ bot.on('messageCreate', async function (message:any) {
 
 
 
-        if(message.channel.name === discordChannel){
-
+        if(true){
             log.info(tag," correct channel: ",discordChannel)
             // log.info("message: ",JSON.stringify(message))
-            log.info("user: ",message.author.id)
-            log.info("channel: ",message.channel.name)
-            log.info("content: ",message.content)
+            log.info(tag,"user: ",message.author.id)
+            log.info(tag,"channel: ",message.channel.name)
+            log.info(tag,"content: ",message.content)
+            log.info(tag,"cleanContent: ",message.cleanContent)
 
             //if valid
-            if(message.content && message.author.id){
+            if(message.cleanContent && message.author.id){
 
                 //publish
                 queue.createWork("bots:ccbot:ingest",data)
 
                 //get response from ccBot
                 let response = await redisQueue.blpop(data.queueId, TIMEOUT_BOT_RESPONSE)
+                log.info(tag," response: ",response)
                 if(!response[1]) throw Error('invalid response from ccbot!')
                 let responses = JSON.parse(response[1])
                 if(responses){
@@ -315,6 +346,7 @@ bot.on('messageCreate', async function (message:any) {
                         let view = responses.views[i]
 
                         //create embed
+                        log.info("message: ",embeds)
                         let output = await create_view(view,message,data)
                         for(let j = 0; j < output.embeds.length; j++){
                             let embed = output.embeds[j]
@@ -324,12 +356,19 @@ bot.on('messageCreate', async function (message:any) {
                     }
 
                     //if sentences
-
+                    log.info("message: ",embeds)
                     if(embeds.length > 0){
+                        log.info("sending message: ",embeds)
                         message.channel.send({ embeds });
                     }
-
+                    if(responses.sentences.length > 0){
+                        log.info("sending message: ",embeds)
+                        message.channel.send(responses.sentences.join("\n"));
+                    }
                 }
+            } else {
+                log.error(tag,"invalid message! ",message)
+                log.error(tag,"cleanContent: ",message.cleanContent)
             }
         }
 

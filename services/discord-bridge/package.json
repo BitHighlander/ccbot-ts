@@ -24,7 +24,7 @@
     "@pioneer-platform/redis-queue": "latest",
     "@types/uuid": "^8.3.1",
     "chai": "^4.3.4",
-    "discord.js": "^13.1.0",
+    "discord.js": "^14.7.1",
     "dotenv": "^8.1.0",
     "node-cron": "^3.0.0",
     "sentence-tokenizer": "^1.0.1",
