@@ -1,6 +1,6 @@
 # build stage
 #FROM node:stretch-slim
-FROM node:10
+FROM node:18.2.0
 
 
 ARG NPM_TOKEN
