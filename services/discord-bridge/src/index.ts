@@ -36,6 +36,10 @@ const { Client, Intents, EmbedBuilder, GatewayIntentBits } = require('discord.js
 if(!EmbedBuilder) throw Error("Discord.js API changed!")
 if(!Client) throw Error("Discord.js API changed!")
 
+let CC_NERF:any = process.env['CC_NERF']
+CC_NERF = true
+if(CC_NERF)log.info(" CC_NERFed!")
+
 interface Data {
     queueId:string
     admin:boolean
@@ -314,10 +318,7 @@ bot.on('messageCreate', async function (message:any) {
         //filter by server
 
         //filter by channel
-
-
-
-        if(true){
+        if(message.channel.name === discordChannel){
             log.info(tag," correct channel: ",discordChannel)
             // log.info("message: ",JSON.stringify(message))
             log.info(tag,"user: ",message.author.id)
@@ -359,11 +360,11 @@ bot.on('messageCreate', async function (message:any) {
                     log.info("message: ",embeds)
                     if(embeds.length > 0){
                         log.info("sending message: ",embeds)
-                        message.channel.send({ embeds });
+                        if(!CC_NERF) message.channel.send({ embeds });
                     }
                     if(responses.sentences.length > 0){
                         log.info("sending message: ",embeds)
-                        message.channel.send(responses.sentences.join("\n"));
+                        if(!CC_NERF) message.channel.send(responses.sentences.join("\n"));
                     }
                 }
             } else {
