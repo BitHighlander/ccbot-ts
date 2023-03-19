@@ -37,7 +37,6 @@ if(!EmbedBuilder) throw Error("Discord.js API changed!")
 if(!Client) throw Error("Discord.js API changed!")
 
 let CC_NERF:any = process.env['CC_NERF']
-CC_NERF = true
 if(CC_NERF)log.info(" CC_NERFed!")
 
 interface Data {
@@ -371,6 +370,8 @@ bot.on('messageCreate', async function (message:any) {
                 log.error(tag,"invalid message! ",message)
                 log.error(tag,"cleanContent: ",message.cleanContent)
             }
+        } else {
+            log.info(tag," incorrect channel: ",message.channel.name +" !== "+discordChannel)
         }
 
         return
