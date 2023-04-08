@@ -89,7 +89,7 @@ if(!discordChannel) throw Error("DISCORD_BOT_CHANNEL env required! ")
 let DISCORD_ADMIN_USERID = process.env['DISCORD_ADMIN_USERID']
 if(!DISCORD_ADMIN_USERID) log.error(" no admins configured! ")
 
-let TIMEOUT_BOT_RESPONSE = process.env['TIMEOUT_BOT_RESPONSE'] || 5
+let TIMEOUT_BOT_RESPONSE = process.env['TIMEOUT_BOT_RESPONSE'] || 600
 
 let msg:any
 if(!process.env['DISCORD_BOT_TOKEN']) throw Error("env DISCORD_BOT_TOKEN required!")
@@ -105,6 +105,7 @@ bot.on('ready', () => {
 const create_view = async function(view:any,message:any,data:any){
     let tag = TAG + " | create_view | "
     try{
+        log.info(tag,{view,message,data})
         let output:any = {
             embeds:[]
         }
@@ -326,7 +327,7 @@ bot.on('messageCreate', async function (message:any) {
             log.info(tag,"cleanContent: ",message.cleanContent)
 
             //if valid
-            if(message.cleanContent && message.author.id){
+            if(message.cleanContent && message.author.id && message.author.id !== BOT_USER){
 
                 //publish
                 queue.createWork("bots:ccbot:ingest",data)
@@ -346,7 +347,7 @@ bot.on('messageCreate', async function (message:any) {
                         let view = responses.views[i]
 
                         //create embed
-                        log.info("message: ",embeds)
+                        log.info("message: ",view)
                         let output = await create_view(view,message,data)
                         for(let j = 0; j < output.embeds.length; j++){
                             let embed = output.embeds[j]

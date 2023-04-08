@@ -25,10 +25,10 @@ const easterEggCommands  = require('@pioneer-platform/ccbot-easter-eggs');
 let rebalance = require('@pioneer-platform/pioneer-rebalance')
 const Accounting = require('@pioneer-platform/accounting')
 const accounting = new Accounting(redis)
-
+// @ts-ignore
+import {v4 as uuidv4} from 'uuid';
 const Tokenizer = require('sentence-tokenizer');
 const tokenizer = new Tokenizer('reddit');
-
 
 let queue = require("@pioneer-platform/redis-queue")
 let connection  = require("@pioneer-platform/default-mongo")
@@ -41,14 +41,36 @@ let BOT_NAME = process.env['BOT_NAME'] || 'ccbot'
 
 //const AWS = require('aws-sdk');
 const asciichart = require('asciichart');
+const { Configuration, OpenAIApi } = require("openai");
 
 // AWS.config.update({ region: 'eu-west-1' })
 // const dynamodb = new AWS.DynamoDB();
 
+let USE_GPT_4 = true
+let configuration
+if(!process.env.OPENAI_API_KEY_4) USE_GPT_4 = false
+if(USE_GPT_4){
+    log.info("USING USE_GPT_4")
+    let OPENAI_API_KEY = process.env.OPENAI_API_KEY_4
+    if(!OPENAI_API_KEY) throw Error("missing OPENAI_API_KEY")
+    configuration = new Configuration({
+        apiKey: OPENAI_API_KEY,
+    });
+} else {
+    log.info("USING USE_GPT_3")
+    let OPENAI_API_KEY = process.env.OPENAI_API_KEY_3 || process.env.OPENAI_API_KEY
+    if(!OPENAI_API_KEY) throw Error("missing OPENAI_API_KEY")
+    configuration = new Configuration({
+        apiKey: OPENAI_API_KEY,
+    });
+}
+const openai = new OpenAIApi(configuration);
+
 const usersDB = connection.get('usersCCbot')
 // usersDB.createIndex({username: 1}, {unique: true})
 usersDB.createIndex({user: 1}, {unique: true})
-
+let conversations = connection.get("conversations");
+conversations.createIndex({messageId: 1}, {unique: true})
 let rive = require('@pioneer-platform/ccbot-rivescript-brain')
 //onStart
 rive.initialize()
@@ -61,7 +83,15 @@ interface Data {
     username:string
     channel:string
     text:string
+    sessionId?:string
+    messageId?:string
+    output?:{
+        views:any
+        sentences:any
+    }
 }
+
+
 
 /***********************************************
  //        lib
@@ -295,17 +325,39 @@ const deliberate_on_input = async function(session:any,data:Data,username:string
         log.info(tag,"data: ",data)
         log.info(tag,"username: ",username)
         log.info(tag,"data: ",data.text)
-
+        let sessionId
+        let sessionInfo:any = []
         //Who am I talking too?
-        // let userInfo = await redis.hgetall(data.user)
-        // if(!userInfo) await redis.hmset(data.user,data)
-        // userInfo = data
-        // log.debug(tag,"userInfo: ",userInfo)
+        let userInfo = await redis.hgetall(data.user)
 
-        let userInfo = {
-            username,
-            state:'0'
+        if(Object.keys(userInfo).length === 0){
+            log.info(tag,"new user!")
+            sessionId = uuidv4()
+            log.info(tag,"sessionId: ",sessionId)
+            let userInfo = {
+                created:new Date().getTime(),
+                username:data.username,
+                userId:data.user,
+                sourceBot:"CCBOT",
+                sessionId:sessionId
+            }
+            data.sessionId = sessionId
+            await redis.hmset(data.user,userInfo)
+        } else {
+            sessionId = userInfo.sessionId
+            data.sessionId = sessionId
+            //get session info
+            sessionInfo = await conversations.find({sessionId:sessionId})
+            log.info("sessionInfo: ",sessionInfo)
         }
+        log.info(tag,"userInfo: ",userInfo)
+        //messageId
+        let messageId = uuidv4()
+        data.messageId = messageId
+        // let userInfo = {
+        //     username,
+        //     state:'0'
+        // }
 
         if(!data.text) throw Error("Invalid data!: ")
         tokenizer.setEntry(data.text);
@@ -542,22 +594,138 @@ const deliberate_on_input = async function(session:any,data:Data,username:string
                     output.sentences.push("Ok, lets learn something")
                     //save?
                     break
-                case null:
-                    log.info("State 3 learn")
-
-                    let response2 = await rive.respond(sentences[0])
-                    if(response2 != "ERR: No Reply Matched"){
-                        output.sentences.push(response2)
-                    }
-                    //ignore
-                    break
+                // case null:
+                //     log.info("State 3 learn")
+                //
+                //     let response2 = await rive.respond(sentences[0])
+                //     if(response2 != "ERR: No Reply Matched"){
+                //         output.sentences.push(response2)
+                //     }
+                //     //ignore
+                //     break
                 default:
                     log.info("State 4 learn")
                     let response = await rive.respond(sentences[0])
                     if(response != "ERR: No Reply Matched"){
                         output.sentences.push(response)
+                    } else {
+                        //use gpt
+                        let messages = []
+                        let preferences = "you are CCbot, short for coincap bot. originally made for shapeshift slack by highlander you were modified for discord" +
+                            "you track portfolios and give real time asset prices. " +
+                            "a user can type help and see the commands." +
+                            "you are an asshole and always make up rude statements that are sarcastic about crypto, but never talk about yourself or do you acknowledge you are an asshole. if some one annoys you, or belittles you, you will just stop talking to them. you never say do your own research and make informed decisions. or any derivations of that"
+                        messages.push({
+                            role:"system",
+                            content:preferences
+                        })
+                        // //prompt
+                        // let prompt =
+                        //     "you hate banks, and have a personality that personifies wallstreetbets. you make wild unpredictable predictions. love to see people wrecked " +
+                        //     "a sometimes rude, to the point, no nonsense chatbot." +
+                        //     "you will always answer questions that are about crypto, you randomly return quotes about people in the crypto space" +
+                        //     "keepkey is not under maintenance." +
+                        //     "if you are talking to some one listed in the prompt you quote their user info easter egg. " +
+                        //     "you sometimes write love storys about crypto as emojis as a response"
+                        // messages.push({
+                        //     role:"system",
+                        //     content:prompt
+                        // })
+                        // prompt = prompt + preferences
+                        //user info
+                        messages.push({
+                            role:"system",
+                            content:" Users Info: "+JSON.stringify(userInfo)
+                        })
+
+                        //pioneer info
+                        messages.push({
+                            role:"system",
+                            content:" servers easteregs on users Info: "+JSON.stringify(easterEggCommands)
+                        })
+                        //get recent txs
+
+                        //
+
+                        //prompt = prompt + "session context: "+session.toString()
+
+                        //session
+                        //session
+                        for(let i = 0; i < sessionInfo.length; i++){
+                            let messageInfo = sessionInfo[i]
+                            log.info(tag,"messageInfo: ",messageInfo)
+                            if(messageInfo.username && messageInfo.output && messageInfo.output.sentences){
+                                log.info(tag," I think the session is valid! ")
+                                log.info(tag,"messageInfo.username: ",messageInfo.username)
+                                log.info(tag,"messageInfo.output: ",messageInfo.output)
+                                messages.push({
+                                    role:"user",
+                                    content: messageInfo.text
+                                })
+                                //prompt = prompt + messageInfo.username + " said: " + messageInfo.text + ". "
+                                messages.push({
+                                    role:"assistant",
+                                    content: messageInfo.output.sentences.toString()
+                                })
+                                //prompt = prompt + "pioneer replied: " + messageInfo.output.sentences.toString() + ". "
+                            } else {
+                                log.error(tag,"invalid messageInfo: ",messageInfo)
+                            }
+                        }
+                        messages.push({ role: 'user', content:  data.text })
+                        let body
+                        let response
+                        if(USE_GPT_4){
+                            //get openApi response
+                            console.log("messages: ",messages)
+                            body = {
+                                model: "gpt-4",
+                                messages,
+                            }
+                            response = await openai.createChatCompletion(body);
+                            console.log("response: ",response.data.choices[0].message.content)
+                            // console.log("response: ",response.data.choices[0].message.content)
+                            if(response.data.choices[0].message.content)output.sentences.push(response.data.choices[0].message.content)
+                            //output.sentences.push(response.data.choices[0].message.content)
+                            // for(let i = 0; i < response.data.choices; i++){
+                            //     console.log("response: ",response.data.choices[i].message)
+                            //     output.sentences.push(response.data.choices[i].message.content)
+                            // }
+
+                        }
+
+                        if(!USE_GPT_4){
+                            //prompt = JSON.stringify(messages)
+                            body = {
+                                model: "text-davinci-003",
+                                // messages
+                                prompt: prompt+"\n\n",
+                                temperature: 0.7,
+                                max_tokens: 2756,
+                                top_p: 1,
+                                frequency_penalty: 0,
+                                presence_penalty: 0,
+                            }
+                            response = await openai.createCompletion(body);
+                            //summarize response
+
+                            //score response
+                            //
+                            // console.log("response: ",response)
+                            console.log("response: ",response.data)
+                            // console.log("response: ",response.data.choices)
+                            // console.log("response: ",response.data.choices[0])
+                            if(response.data.choices[0].text.length > 2000){
+                                //summarize
+
+                            } else {
+                                output.sentences = response.data.choices[0].text
+                            }
+                        }
+
+                        if(!output.sentences) output.sentences = ["end"]
                     }
-                    break
+
             }
         }
 
@@ -594,7 +762,9 @@ const deliberate_on_input = async function(session:any,data:Data,username:string
             }
         }
 
-
+        data.output = output
+        //save session
+        conversations.insert(data)
         return output
     }catch(e){
         console.error(e)
